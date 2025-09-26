@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Vault Solver — 4-digit</title>
+<!--
+  Vault Solver — single-file.
+  To use on GitHub Pages: save this as index.html in your repo and enable GitHub Pages
+  (branch: main or gh-pages, folder: /root). No external resources required.
+-->
+<style>
+  :root{
+    --bg:#0f1724;
+    --card:#0b1220;
+    --muted:#98a0b3;
+    --accent:#60a5fa;
+    --good:#34d399;
+    --warn:#f59e0b;
+    --bad:#94a3b8;
+    --glass: rgba(255,255,255,0.03);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #071022 100%);color:#e6eef8}
+  .wrap{max-width:980px;margin:28px auto;padding:20px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow: 0 6px 30px rgba(2,6,23,0.6);}
+  h1{font-size:20px;margin:0 0 8px}
+  p.lead{margin:0 0 18px;color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:18px}
+  .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 4px 14px rgba(2,6,23,0.6)}
+  .row{display:flex;gap:8px;align-items:center}
+  .digits{display:flex;gap:8px;margin-bottom:10px}
+  input.digit{width:56px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:22px;text-align:center}
+  .fb-row{display:flex;gap:8px;justify-content:center;margin-top:6px}
+  .color-toggle{display:flex;gap:6px;justify-content:center}
+  .col-box{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;box-sizing:border-box;opacity:0.9}
+  .col-box.grey{background:var(--bad)}
+  .col-box.yellow{background:var(--warn)}
+  .col-box.blue{background:var(--good)}
+  .col-box.selected{outline:3px solid rgba(255,255,255,0.06); transform:translateY(-1px)}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button{background:var(--accent);border:none;padding:10px 12px;color:#04203a;border-radius:8px;font-weight:600;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  button.solid{background:#10b981;color:#04203a}
+  .meta{font-size:13px;color:var(--muted);margin-top:8px}
+  .candidate {display:flex;gap:6px;align-items:center;margin:6px 0;padding:6px;border-radius:8px;background:var(--glass);font-family:monospace}
+  .chip{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);font-family:monospace}
+  .colors{display:flex;gap:6px}
+  .sw{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,0.04)}
+  .sw.grey{background:var(--bad)}
+  .sw.yellow{background:var(--warn)}
+  .sw.blue{background:var(--good)}
+  .footer {margin-top:14px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .small{font-size:12px;color:var(--muted)}
+  .big-suggest{font-size:22px;font-weight:700;background:linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));padding:8px;border-radius:8px;display:inline-block;font-family:monospace}
+  .status{margin-top:8px;font-size:13px}
+  .list{max-height:360px;overflow:auto;padding-right:6px}
+  .hint{margin-top:8px;color:var(--muted);font-size:13px}
+  label.toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+  input[type=checkbox]{transform:scale(1.1)}
+  /* small screens */
+  @media (max-width:880px){ .grid{grid-template-columns:1fr; } .big-suggest{font-size:18px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Vault Solver — 4-digit code (0–9, repeats allowed)</h1>
+    <p class="lead">Enter a guess (one digit per box) and set the per-digit feedback by clicking the small color boxes under each digit: <span style="display:inline-block;width:12px;height:12px;background:var(--bad);border-radius:3px;margin:0 6px;"></span> grey, <span style="display:inline-block;width:12px;height:12px;background:var(--warn);border-radius:3px;margin:0 6px;"></span> yellow, <span style="display:inline-block;width:12px;height:12px;background:var(--good);border-radius:3px;margin:0 6px;"></span> blue.</p>
+
+    <div class="grid">
+      <div class="card" id="left">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="flex:1;margin-right:12px">
+            <div class="small">Enter guess</div>
+            <div class="digits" style="margin-top:6px">
+              <div style="text-align:center">
+                <input class="digit" maxlength="1" id="d0" inputmode="numeric" pattern="[0-9]" />
+                <div class="color-toggle" data-pos="0">
+                  <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
+                  <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
+                  <div class="col-box blue" data-fb="B" title="Blue (correct)"></div>
+                </div>
+              </div>
+
+              <div style="text-align:center">
+                <input class="digit" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]" />
+                <div class="color-toggle" data-pos="1">
+                  <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
+                  <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
+                  <div class="col-box blue" data-fb="B" title="Blue (correct)"></div>
+                </div>
+              </div>
+
+              <div style="text-align:center">
+                <input class="digit" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]" />
+                <div class="color-toggle" data-pos="2">
+                  <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
+                  <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
+                  <div class="col-box blue" data-fb="B" title="Blue (correct)"></div>
+                </div>
+              </div>
+
+              <div style="text-align:center">
+                <input class="digit" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]" />
+                <div class="color-toggle" data-pos="3">
+                  <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
+                  <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
+                  <div class="col-box blue" data-fb="B" title="Blue (correct)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="width:220px">
+            <div class="small">Quick controls</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+              <div class="controls">
+                <button id="submit">Submit feedback</button>
+                <button id="autofill" class="ghost">Autofill suggestion</button>
+                <button id="undo" class="ghost">Undo last</button>
+                <button id="reset" class="ghost">Reset</button>
+                <button id="solved" class="solid">Mark solved</button>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <label class="small"><input type="checkbox" id="restrict" checked /> Restrict suggestions</label>
+                <label class="small"><input type="checkbox" id="showAll" /> Show all</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta" id="meta"></div>
+
+        <div style="margin-top:12px">
+          <div class="small">History</div>
+          <div id="history" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div class="card" id="right">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="small">Suggested next guess</div>
+            <div style="margin-top:8px"><span class="big-suggest" id="suggestion">----</span></div>
+            <div class="status" id="suggest-details"></div>
+          </div>
+          <div style="text-align:right">
+            <div class="small">Info</div>
+            <div style="margin-top:8px" class="hint">First 3 guesses maximize discovery of distinct digits. From guess 4 onwards suggestions aim to minimize expected remaining candidates.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="meta" id="remaining">Remaining possibilities: 10000</div>
+
+        <div style="margin-top:10px" class="list card" id="candidates-preview">
+          <!-- candidates -->
+        </div>
+
+        <div class="footer">
+          <div class="small" id="perf">Performance: ready</div>
+          <div class="small">Single-file — GitHub Pages ready</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px" class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="small">How feedback is computed</div>
+          <pre style="color:var(--muted)">Blue = correct digit in correct position
+Yellow = digit appears in code but not here (accounting for duplicates)
+Grey = digit not present (accounting for duplicates)</pre>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Deploying to GitHub Pages</div>
+          <div class="hint">Save as <code>index.html</code>, push to a repo, then enable GitHub Pages in the repo settings (branch: main or gh-pages). No server or build step required.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* Vault solver JS (single-file).
+   Changes vs previous: feedback set by clicking the small color boxes under each digit.
+*/
+
+(() => {
+  // Utilities
+  function pad4(n){ return String(n).padStart(4,'0'); }
+  function generateAll(){
+    const arr = [];
+    for(let i=0;i<10000;i++) arr.push(pad4(i));
+    return arr;
+  }
+
+  // Wordle-style feedback: returns array of 'B' (blue), 'Y' (yellow), 'G' (grey)
+  function getFeedback(secret, guess){
+    const res = ['G','G','G','G'];
+    const s = secret.split(''), g = guess.split('');
+    const sUsed = [false, false, false, false];
+    const gUsed = [false, false, false, false];
+    for(let i=0;i<4;i++){
+      if(s[i] === g[i]){
+        res[i] = 'B';
+        sUsed[i] = true;
+        gUsed[i] = true;
+      }
+    }
+    const counts = {};
+    for(let i=0;i<4;i++){
+      if(!sUsed[i]){
+        counts[s[i]] = (counts[s[i]] || 0) + 1;
+      }
+    }
+    for(let i=0;i<4;i++){
+      if(!gUsed[i]){
+        const ch = g[i];
+        if((counts[ch] || 0) > 0){
+          res[i] = 'Y';
+          counts[ch]--;
+        } else {
+          res[i] = 'G';
+        }
+      }
+    }
+    return res;
+  }
+
+  function feedbackEquals(a,b){ for(let i=0;i<4;i++) if(a[i] !== b[i]) return false; return true; }
+
+  // State
+  const ALL = generateAll();
+  let remaining = ALL.slice();
+  let history = []; // {guess, fb: ['G','Y','B',...]}
+  let testedDigits = new Set();
+  const DOM = {};
+  // DOM refs
+  ['d0','d1','d2','d3','submit','autofill','reset','undo','solved','meta','history','suggestion','remaining','candidates-preview','suggest-details','restrict','showAll','perf'].forEach(id=>{
+    DOM[id] = document.getElementById(id);
+  });
+
+  function updateMeta(){
+    DOM.meta.innerText = `Guesses: ${history.length} — tested digits: ${[...testedDigits].sort().join('') || '(none)'}`;
+    DOM.remaining.innerText = `Remaining possibilities: ${remaining.length.toLocaleString()}`;
+    DOM.perf.innerText = `Performance: ${performance.now().toFixed(0)}ms`;
+  }
+
+  function renderHistory(){
+    const el = DOM.history;
+    el.innerHTML = '';
+    for(let i=0;i<history.length;i++){
+      const h = history[i];
+      const div = document.createElement('div');
+      div.className = 'candidate';
+      div.innerHTML = `
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="chip">${h.guess}</div>
+          <div class="colors">
+            ${h.fb.map(c=>`<div class="sw ${c==='B'?'blue':c==='Y'?'yellow':'grey'}" title="${c}"></div>`).join('')}
+          </div>
+        </div>
+        <div style="margin-left:auto;color:var(--muted);font-size:13px">#${i+1}</div>
+      `;
+      el.appendChild(div);
+    }
+  }
+
+  function renderCandidates(){
+    const preview = DOM['candidates-preview'];
+    preview.innerHTML = '';
+    const showAll = DOM.showAll.checked;
+    const maxShow = showAll ? 200 : 30;
+    const list = remaining.slice(0, maxShow);
+    for(const c of list){
+      const d = document.createElement('div');
+      d.className = 'candidate';
+      d.innerHTML = `<div class="chip">${c}</div><div style="margin-left:8px;color:var(--muted)">${sampleStats(c)}</div>`;
+      preview.appendChild(d);
+    }
+    if(remaining.length > maxShow){
+      const more = document.createElement('div');
+      more.className = 'small';
+      more.style.marginTop = '8px';
+      more.innerText = `...plus ${remaining.length - maxShow} more`;
+      preview.appendChild(more);
+    }
+  }
+
+  function sampleStats(c){
+    const s = new Set(c.split(''));
+    return `${s.size} unique`;
+  }
+
+  // Filter remaining candidates by one feedback constraint
+  function filterBy(guess, fb){
+    const newRem = [];
+    for(const cand of remaining){
+      const f = getFeedback(cand, guess);
+      if(feedbackEquals(f, fb)){
+        newRem.push(cand);
+      }
+    }
+    remaining = newRem;
+  }
+
+  function resetAll(){
+    remaining = ALL.slice();
+    history = [];
+    testedDigits = new Set();
+    updateMeta();
+    renderHistory();
+    renderCandidates();
+    setSuggestion('----','No guesses yet');
+    // clear inputs
+    ['d0','d1','d2','d3'].forEach(id=>document.getElementById(id).value='');
+    // reset color boxes to default grey
+    document.querySelectorAll('.color-toggle').forEach(ct=>{
+      ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+      const first = ct.querySelector('.col-box.grey');
+      if(first) first.classList.add('selected');
+    });
+  }
+
+  function setSuggestion(text, details){
+    DOM.suggestion.innerText = text;
+    DOM['suggest-details'].innerText = details || '';
+  }
+
+  function suggestNext(){
+    const guessCount = history.length;
+    const restrict = DOM.restrict.checked;
+    if(remaining.length === 0){
+      setSuggestion('----', 'No possible codes (check inputs).');
+      return;
+    }
+    if(remaining.length === 1){
+      setSuggestion(remaining[0], 'Only one candidate left — try this.');
+      return;
+    }
+
+    if(guessCount < 3){
+      let best = null;
+      let bestScore = -1;
+      const pool = ALL;
+      for(const c of pool){
+        if(history.some(h=>h.guess === c)) continue;
+        const digits = Array.from(new Set(c.split('')));
+        let newDigits = 0;
+        for(const d of digits) if(!testedDigits.has(d)) newDigits++;
+        const score = newDigits * 10 + digits.length;
+        if(score > bestScore){
+          bestScore = score;
+          best = c;
+        }
+      }
+      if(best) setSuggestion(best, `Info-guess (covers ${best.split('').filter((v,i,a)=>a.indexOf(v)===i).length} unique digits).`);
+      else setSuggestion(remaining[0], 'Fallback to first remaining.');
+      return;
+    }
+
+    const N = remaining.length;
+    let evalPool = remaining.slice();
+    let targetSample = 1200;
+    if(N > targetSample){
+      evalPool = shuffle(remaining).slice(0, targetSample);
+    }
+    let guessPool = [];
+    if(restrict){
+      guessPool = evalPool.slice();
+    } else {
+      guessPool = evalPool.slice();
+      let added = 0;
+      for(const c of ALL){
+        if(added >= 400) break;
+        if(guessPool.includes(c)) continue;
+        if(new Set(c.split('')).size >= 4){
+          guessPool.push(c);
+          added++;
+        }
+      }
+    }
+
+    let bestGuess = null;
+    let bestVal = Number.POSITIVE_INFINITY;
+    const cap = 1500;
+    const gPool = guessPool.slice(0, cap);
+    const start = performance.now();
+    for(let i=0;i<gPool.length;i++){
+      const g = gPool[i];
+      const map = Object.create(null);
+      for(const cand of evalPool){
+        const fb = getFeedback(cand, g).join('');
+        map[fb] = (map[fb] || 0) + 1;
+      }
+      let sumsq = 0;
+      for(const k in map) sumsq += map[k]*map[k];
+      if(sumsq < bestVal){
+        bestVal = sumsq;
+        bestGuess = g;
+      }
+    }
+    const elapsed = Math.round(performance.now()-start);
+    if(bestGuess && !remaining.includes(bestGuess)){
+      const alt = gPool.find(g => remaining.includes(g) && g !== bestGuess);
+      if(alt) bestGuess = alt;
+    }
+    setSuggestion(bestGuess || remaining[0], `Partition score: ${Math.round(bestVal/N)} (eval ${gPool.length} guesses, sample ${evalPool.length}). ${elapsed}ms.`);
+  }
+
+  function shuffle(a){
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // read feedback from color boxes for a given position
+  function readFeedbackForPos(pos){
+    const ct = document.querySelector('.color-toggle[data-pos="'+pos+'"]');
+    if(!ct) return 'G';
+    const sel = ct.querySelector('.col-box.selected');
+    return sel ? sel.getAttribute('data-fb') : 'G';
+  }
+
+  // Button handlers
+  DOM.submit.addEventListener('click', ()=>{
+    const digits = [DOM.d0.value, DOM.d1.value, DOM.d2.value, DOM.d3.value].join('');
+    if(!/^\d{4}$/.test(digits)){
+      alert('Please enter a 4-digit guess (0–9). Use one digit per box.');
+      return;
+    }
+    const fb = [readFeedbackForPos(0), readFeedbackForPos(1), readFeedbackForPos(2), readFeedbackForPos(3)];
+    history.push({guess: digits, fb});
+    for(const ch of digits) testedDigits.add(ch);
+    filterBy(digits, fb);
+    renderHistory();
+    renderCandidates();
+    updateMeta();
+    setTimeout(() => suggestNext(), 8);
+  });
+
+  DOM.autofill.addEventListener('click', ()=>{
+    const sug = DOM.suggestion.innerText;
+    if(!/^\d{4}$/.test(sug)) return;
+    DOM.d0.value = sug[0]; DOM.d1.value = sug[1]; DOM.d2.value = sug[2]; DOM.d3.value = sug[3];
+    // reset feedback to grey defaults
+    document.querySelectorAll('.color-toggle').forEach(ct=>{
+      ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+      const first = ct.querySelector('.col-box.grey');
+      if(first) first.classList.add('selected');
+    });
+  });
+
+  DOM.reset.addEventListener('click', ()=>{
+    if(!confirm('Reset solver to initial state?')) return;
+    resetAll();
+  });
+
+  DOM.undo.addEventListener('click', ()=>{
+    if(history.length === 0) return;
+    history.pop();
+    remaining = ALL.slice();
+    testedDigits = new Set();
+    for(const h of history){
+      for(const ch of h.guess) testedDigits.add(ch);
+      const newR = [];
+      for(const cand of remaining){
+        if(feedbackEquals(getFeedback(cand, h.guess), h.fb)) newR.push(cand);
+      }
+      remaining = newR;
+    }
+    renderHistory();
+    renderCandidates();
+    updateMeta();
+    setSuggestion('----', 'Undid last guess');
+    setTimeout(()=> suggestNext(), 8);
+  });
+
+  DOM.solved.addEventListener('click', ()=>{
+    const maybe = remaining.length === 1 ? remaining[0] : null;
+    if(maybe){
+      alert('Marked solved: ' + maybe);
+    } else {
+      if(!confirm('Mark as solved and reset?')) return;
+    }
+    resetAll();
+  });
+
+  // Color box interactions
+  document.querySelectorAll('.color-toggle').forEach(ct=>{
+    ct.addEventListener('click', (e)=>{
+      const target = e.target.closest('.col-box');
+      if(!target) return;
+      // toggle selected among siblings (radio-like)
+      ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+      target.classList.add('selected');
+    });
+  });
+
+  // keyboard: enter to submit; arrow nav between digits
+  ['d0','d1','d2','d3'].forEach(id=>{
+    const el = document.getElementById(id);
+    el.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter') DOM.submit.click();
+      if(e.key === 'ArrowRight') {
+        const next = {'d0':'d1','d1':'d2','d2':'d3','d3':'d0'}[id];
+        document.getElementById(next).focus();
+      }
+      if(e.key === 'ArrowLeft') {
+        const prev = {'d0':'d3','d1':'d0','d2':'d1','d3':'d2'}[id];
+        document.getElementById(prev).focus();
+      }
+    });
+    el.addEventListener('input', (e)=>{
+      const v = e.target.value.replace(/[^\d]/g, '');
+      e.target.value = v.slice(0,1);
+      if(v.length>0){
+        const nextId = {'d0':'d1','d1':'d2','d2':'d3','d3':null}[id];
+        if(nextId) document.getElementById(nextId).focus();
+      }
+    });
+  });
+
+  document.getElementById('restrict').addEventListener('change', ()=> suggestNext());
+  document.getElementById('showAll').addEventListener('change', ()=> renderCandidates());
+
+  // initial render
+  resetAll();
+  suggestNext();
+
+})();
+</script>
+</body>
+</html>
