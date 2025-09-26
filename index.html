@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Vault Solver — 4-digit</title>
+<title>Vault Solver — 4-digit code</title>
 <!--
   Vault Solver — single-file.
   To use on GitHub Pages: save this as index.html in your repo and enable GitHub Pages
@@ -15,10 +15,11 @@
     --card:#0b1220;
     --muted:#98a0b3;
     --accent:#60a5fa;
-    --good:#34d399;
-    --warn:#f59e0b;
-    --bad:#94a3b8;
+    --good:#34d399;   /* blue/green for correct */
+    --warn:#f59e0b;   /* yellow for present-wrong-pos */
+    --bad:#94a3b8;    /* grey for not present */
     --glass: rgba(255,255,255,0.03);
+    --input-dark-text: #04203a;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   }
   html,body{height:100%;margin:0;background:linear-gradient(180deg,#071026 0%, #071022 100%);color:#e6eef8}
@@ -29,10 +30,15 @@
   .card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 4px 14px rgba(2,6,23,0.6)}
   .row{display:flex;gap:8px;align-items:center}
   .digits{display:flex;gap:8px;margin-bottom:10px}
-  input.digit{width:56px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:22px;text-align:center}
+  input.digit{width:56px;height:56px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit;font-size:22px;text-align:center;box-sizing:border-box}
+  /* feedback-color classes for inputs */
+  input.digit.fb-grey{ background: var(--bad); color: var(--input-dark-text); border-color: rgba(0,0,0,0.18); }
+  input.digit.fb-yellow{ background: var(--warn); color: var(--input-dark-text); border-color: rgba(0,0,0,0.18); }
+  input.digit.fb-blue{ background: var(--good); color: var(--input-dark-text); border-color: rgba(0,0,0,0.18); }
+
   .fb-row{display:flex;gap:8px;justify-content:center;margin-top:6px}
-  .color-toggle{display:flex;gap:6px;justify-content:center}
-  .col-box{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;box-sizing:border-box;opacity:0.9}
+  .color-toggle{display:flex;gap:6px;justify-content:center;margin-top:6px}
+  .col-box{width:18px;height:18px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);cursor:pointer;box-sizing:border-box;opacity:0.95}
   .col-box.grey{background:var(--bad)}
   .col-box.yellow{background:var(--warn)}
   .col-box.blue{background:var(--good)}
@@ -64,7 +70,7 @@
 <body>
   <div class="wrap">
     <h1>Vault Solver — 4-digit code (0–9, repeats allowed)</h1>
-    <p class="lead">Enter a guess (one digit per box) and set the per-digit feedback by clicking the small color boxes under each digit: <span style="display:inline-block;width:12px;height:12px;background:var(--bad);border-radius:3px;margin:0 6px;"></span> grey, <span style="display:inline-block;width:12px;height:12px;background:var(--warn);border-radius:3px;margin:0 6px;"></span> yellow, <span style="display:inline-block;width:12px;height:12px;background:var(--good);border-radius:3px;margin:0 6px;"></span> blue.</p>
+    <p class="lead">Enter a guess (one digit per box) and set the per-digit feedback by clicking the small color boxes under each digit: <span style="display:inline-block;width:12px;height:12px;background:var(--bad);border-radius:3px;margin:0 6px;"></span> grey, <span style="display:inline-block;width:12px;height:12px;background:var(--warn);border-radius:3px;margin:0 6px;"></span> yellow, <span style="display:inline-block;width:12px;height:12px;background:var(--good);border-radius:3px;margin:0 6px;"></span> blue. The digit box will change color to match the feedback.</p>
 
     <div class="grid">
       <div class="card" id="left">
@@ -73,7 +79,7 @@
             <div class="small">Enter guess</div>
             <div class="digits" style="margin-top:6px">
               <div style="text-align:center">
-                <input class="digit" maxlength="1" id="d0" inputmode="numeric" pattern="[0-9]" />
+                <input class="digit fb-grey" maxlength="1" id="d0" inputmode="numeric" pattern="[0-9]" />
                 <div class="color-toggle" data-pos="0">
                   <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
                   <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
@@ -82,7 +88,7 @@
               </div>
 
               <div style="text-align:center">
-                <input class="digit" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]" />
+                <input class="digit fb-grey" maxlength="1" id="d1" inputmode="numeric" pattern="[0-9]" />
                 <div class="color-toggle" data-pos="1">
                   <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
                   <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
@@ -91,7 +97,7 @@
               </div>
 
               <div style="text-align:center">
-                <input class="digit" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]" />
+                <input class="digit fb-grey" maxlength="1" id="d2" inputmode="numeric" pattern="[0-9]" />
                 <div class="color-toggle" data-pos="2">
                   <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
                   <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
@@ -100,7 +106,7 @@
               </div>
 
               <div style="text-align:center">
-                <input class="digit" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]" />
+                <input class="digit fb-grey" maxlength="1" id="d3" inputmode="numeric" pattern="[0-9]" />
                 <div class="color-toggle" data-pos="3">
                   <div class="col-box grey selected" data-fb="G" title="Grey (not present)"></div>
                   <div class="col-box yellow" data-fb="Y" title="Yellow (present wrong pos)"></div>
@@ -180,7 +186,8 @@ Grey = digit not present (accounting for duplicates)</pre>
 
 <script>
 /* Vault solver JS (single-file).
-   Changes vs previous: feedback set by clicking the small color boxes under each digit.
+   Changes: when selecting a color box the corresponding digit input element receives a matching class
+            (fb-grey / fb-yellow / fb-blue) so the number box visibly changes color.
 */
 
 (() => {
@@ -311,7 +318,13 @@ Grey = digit not present (accounting for duplicates)</pre>
     renderCandidates();
     setSuggestion('----','No guesses yet');
     // clear inputs
-    ['d0','d1','d2','d3'].forEach(id=>document.getElementById(id).value='');
+    ['d0','d1','d2','d3'].forEach(id=>{
+      const el = document.getElementById(id);
+      el.value = '';
+      // reset classes to grey
+      el.classList.remove('fb-yellow','fb-blue');
+      el.classList.add('fb-grey');
+    });
     // reset color boxes to default grey
     document.querySelectorAll('.color-toggle').forEach(ct=>{
       ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
@@ -422,6 +435,16 @@ Grey = digit not present (accounting for duplicates)</pre>
     return sel ? sel.getAttribute('data-fb') : 'G';
   }
 
+  // Apply input color class for a given pos and fb char
+  function applyInputColor(pos, fbChar){
+    const input = document.getElementById('d' + pos);
+    if(!input) return;
+    input.classList.remove('fb-grey','fb-yellow','fb-blue');
+    if(fbChar === 'G') input.classList.add('fb-grey');
+    else if(fbChar === 'Y') input.classList.add('fb-yellow');
+    else if(fbChar === 'B') input.classList.add('fb-blue');
+  }
+
   // Button handlers
   DOM.submit.addEventListener('click', ()=>{
     const digits = [DOM.d0.value, DOM.d1.value, DOM.d2.value, DOM.d3.value].join('');
@@ -443,11 +466,13 @@ Grey = digit not present (accounting for duplicates)</pre>
     const sug = DOM.suggestion.innerText;
     if(!/^\d{4}$/.test(sug)) return;
     DOM.d0.value = sug[0]; DOM.d1.value = sug[1]; DOM.d2.value = sug[2]; DOM.d3.value = sug[3];
-    // reset feedback to grey defaults
+    // reset feedback to grey defaults and apply colors to inputs
     document.querySelectorAll('.color-toggle').forEach(ct=>{
       ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
       const first = ct.querySelector('.col-box.grey');
       if(first) first.classList.add('selected');
+      const pos = ct.getAttribute('data-pos');
+      applyInputColor(pos, 'G');
     });
   });
 
@@ -486,7 +511,7 @@ Grey = digit not present (accounting for duplicates)</pre>
     resetAll();
   });
 
-  // Color box interactions
+  // Color box interactions: update selection AND update input color
   document.querySelectorAll('.color-toggle').forEach(ct=>{
     ct.addEventListener('click', (e)=>{
       const target = e.target.closest('.col-box');
@@ -494,6 +519,10 @@ Grey = digit not present (accounting for duplicates)</pre>
       // toggle selected among siblings (radio-like)
       ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
       target.classList.add('selected');
+      // apply to input
+      const pos = ct.getAttribute('data-pos');
+      const fbChar = target.getAttribute('data-fb');
+      applyInputColor(pos, fbChar);
     });
   });
 
@@ -509,6 +538,34 @@ Grey = digit not present (accounting for duplicates)</pre>
       if(e.key === 'ArrowLeft') {
         const prev = {'d0':'d3','d1':'d0','d2':'d1','d3':'d2'}[id];
         document.getElementById(prev).focus();
+      }
+      // optional quick keys to change color while focused
+      if(e.key === 'g' || e.key === 'G'){ // grey
+        const pos = id.slice(1);
+        const ct = document.querySelector('.color-toggle[data-pos="'+pos+'"]');
+        if(ct){
+          ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+          const first = ct.querySelector('.col-box.grey'); if(first) first.classList.add('selected');
+          applyInputColor(pos, 'G');
+        }
+      }
+      if(e.key === 'y' || e.key === 'Y'){ // yellow
+        const pos = id.slice(1);
+        const ct = document.querySelector('.color-toggle[data-pos="'+pos+'"]');
+        if(ct){
+          ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+          const b = ct.querySelector('.col-box.yellow'); if(b) b.classList.add('selected');
+          applyInputColor(pos, 'Y');
+        }
+      }
+      if(e.key === 'b' || e.key === 'B'){ // blue
+        const pos = id.slice(1);
+        const ct = document.querySelector('.color-toggle[data-pos="'+pos+'"]');
+        if(ct){
+          ct.querySelectorAll('.col-box').forEach(b=>b.classList.remove('selected'));
+          const b = ct.querySelector('.col-box.blue'); if(b) b.classList.add('selected');
+          applyInputColor(pos, 'B');
+        }
       }
     });
     el.addEventListener('input', (e)=>{
